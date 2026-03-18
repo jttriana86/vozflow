@@ -17,7 +17,7 @@ class HotkeyListener(QObject):
 
     Modos:
     - Hold: Mantener Ctrl+Alt para grabar
-    - Hands-free: Doble tap en Ctrl para toggle
+    - Hands-free: Doble tap en Ctrl para toggle (DESACTIVADO por ahora)
     """
 
     # Señales Qt
@@ -32,9 +32,10 @@ class HotkeyListener(QObject):
         self._recording = False
         self._hands_free_mode = False
 
-        # Para detección de doble tap
-        self._last_tap_time = 0.0
-        self._tap_count = 0
+        # Para detección de doble tap (desactivado por defecto)
+        self._enable_double_tap = False  # Desactivado - causa problemas
+        self._last_release_time = 0.0
+        self._waiting_for_double_tap = False
 
         # Listener de pynput
         self._listener: Optional[keyboard.Listener] = None
@@ -56,6 +57,11 @@ class HotkeyListener(QObject):
         if self._listener:
             self._listener.stop()
             self._listener = None
+
+        # Reset estado
+        self._recording = False
+        self._hands_free_mode = False
+        self._keys_held.clear()
 
     def _normalize_key(self, key) -> Optional[str]:
         """Normaliza una tecla a string."""
@@ -88,17 +94,12 @@ class HotkeyListener(QObject):
 
             self._keys_held.add(normalized)
 
-            # Detectar doble tap para modo hands-free
-            if normalized == DOUBLE_TAP_KEY:
-                now = time.time()
-                if now - self._last_tap_time < DOUBLE_TAP_INTERVAL:
-                    self._tap_count += 1
-                    if self._tap_count >= 2:
-                        self._toggle_hands_free()
-                        self._tap_count = 0
-                else:
-                    self._tap_count = 1
-                self._last_tap_time = now
+            # En modo hands-free, cualquier Ctrl detiene la grabación
+            if self._hands_free_mode and normalized == "ctrl":
+                self._hands_free_mode = False
+                self._recording = False
+                self.released.emit()
+                return
 
             # Modo hold: verificar si todas las teclas del hotkey están presionadas
             if not self._hands_free_mode and HOTKEY_HOLD.issubset(self._keys_held):
@@ -115,24 +116,22 @@ class HotkeyListener(QObject):
         with self._lock:
             self._keys_held.discard(normalized)
 
+            # Detectar doble tap en Ctrl (solo si está habilitado)
+            if self._enable_double_tap and normalized == DOUBLE_TAP_KEY:
+                now = time.time()
+                if now - self._last_release_time < DOUBLE_TAP_INTERVAL:
+                    # Doble tap detectado
+                    if not self._hands_free_mode and not self._recording:
+                        self._hands_free_mode = True
+                        self._recording = True
+                        self.pressed.emit()
+                self._last_release_time = now
+
             # Modo hold: detener si se suelta alguna tecla del hotkey
             if not self._hands_free_mode and self._recording:
                 if normalized in HOTKEY_HOLD:
                     self._recording = False
                     self.released.emit()
-
-    def _toggle_hands_free(self) -> None:
-        """Alterna el modo manos libres."""
-        if not self._hands_free_mode:
-            # Activar modo hands-free e iniciar grabación
-            self._hands_free_mode = True
-            self._recording = True
-            self.pressed.emit()
-        else:
-            # Desactivar modo hands-free y detener grabación
-            self._hands_free_mode = False
-            self._recording = False
-            self.released.emit()
 
     @property
     def is_recording(self) -> bool:
@@ -141,3 +140,11 @@ class HotkeyListener(QObject):
     @property
     def is_hands_free(self) -> bool:
         return self._hands_free_mode
+
+    def cancel_recording(self) -> None:
+        """Cancela cualquier grabación en curso."""
+        with self._lock:
+            if self._recording:
+                self._recording = False
+                self._hands_free_mode = False
+                self.released.emit()
