@@ -12,10 +12,14 @@ from PyQt6.QtWidgets import (
     QMessageBox, QCheckBox
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QPixmap
 
 from core.audio import AudioRecorder
 from core.transcriber import Transcriber
+
+# Ruta al logo
+ASSETS_DIR = Path(__file__).parent.parent / "assets"
+LOGO_PATH = ASSETS_DIR / "logo.png"
 
 
 def get_startup_folder() -> Path:
@@ -81,7 +85,7 @@ class FirstRunDialog(QDialog):
         super().__init__(parent)
 
         self.setWindowTitle("VozFlow - Configuración")
-        self.setFixedSize(450, 300)
+        self.setFixedSize(450, 380)
         self.setWindowFlags(
             Qt.WindowType.Dialog |
             Qt.WindowType.WindowCloseButtonHint
@@ -93,6 +97,16 @@ class FirstRunDialog(QDialog):
     def _setup_ui(self) -> None:
         layout = QVBoxLayout(self)
         layout.setSpacing(15)
+
+        # Logo
+        if LOGO_PATH.exists():
+            logo_label = QLabel()
+            pixmap = QPixmap(str(LOGO_PATH))
+            pixmap = pixmap.scaled(80, 80, Qt.AspectRatioMode.KeepAspectRatio,
+                                   Qt.TransformationMode.SmoothTransformation)
+            logo_label.setPixmap(pixmap)
+            logo_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            layout.addWidget(logo_label)
 
         # Título
         title = QLabel("Bienvenido a VozFlow")

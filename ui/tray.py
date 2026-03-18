@@ -2,11 +2,17 @@
 VozFlow - System Tray
 Icono en la bandeja del sistema con menú de opciones.
 """
+from pathlib import Path
+
 from PyQt6.QtWidgets import QSystemTrayIcon, QMenu, QApplication
 from PyQt6.QtGui import QIcon, QPixmap, QPainter, QColor, QAction
-from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6.QtCore import pyqtSignal, QObject, Qt
 
 from config import COLOR_IDLE, COLOR_RECORDING
+
+# Ruta al logo
+ASSETS_DIR = Path(__file__).parent.parent / "assets"
+LOGO_PATH = ASSETS_DIR / "logo.png"
 
 
 class TrayIcon(QObject):
@@ -20,9 +26,12 @@ class TrayIcon(QObject):
     def __init__(self):
         super().__init__()
 
-        # Crear icono
+        # Crear icono (usar logo si existe)
         self._tray = QSystemTrayIcon()
-        self._tray.setIcon(self._create_icon(COLOR_IDLE))
+        if LOGO_PATH.exists():
+            self._tray.setIcon(self._create_icon_from_logo())
+        else:
+            self._tray.setIcon(self._create_icon(COLOR_IDLE))
         self._tray.setToolTip("VozFlow - Ctrl+Alt para dictar")
 
         # Crear menú
@@ -114,14 +123,38 @@ class TrayIcon(QObject):
         """Oculta el icono."""
         self._tray.hide()
 
+    def _create_icon_from_logo(self, overlay_color: str | None = None) -> QIcon:
+        """Crea icono desde el logo con overlay opcional de color."""
+        pixmap = QPixmap(str(LOGO_PATH))
+        # Escalar a tamaño de icono
+        pixmap = pixmap.scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio,
+                               Qt.TransformationMode.SmoothTransformation)
+
+        if overlay_color:
+            # Agregar indicador de estado (punto de color)
+            painter = QPainter(pixmap)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            painter.setBrush(QColor(overlay_color))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawEllipse(44, 44, 18, 18)  # Punto en esquina inferior derecha
+            painter.end()
+
+        return QIcon(pixmap)
+
     def set_recording(self, is_recording: bool) -> None:
         """Actualiza el icono según estado de grabación."""
         if is_recording:
-            self._tray.setIcon(self._create_icon(COLOR_RECORDING))
+            if LOGO_PATH.exists():
+                self._tray.setIcon(self._create_icon_from_logo(COLOR_RECORDING))
+            else:
+                self._tray.setIcon(self._create_icon(COLOR_RECORDING))
             self._tray.setToolTip("VozFlow - Grabando...")
             self._status_action.setText("Grabando...")
         else:
-            self._tray.setIcon(self._create_icon(COLOR_IDLE))
+            if LOGO_PATH.exists():
+                self._tray.setIcon(self._create_icon_from_logo())
+            else:
+                self._tray.setIcon(self._create_icon(COLOR_IDLE))
             self._tray.setToolTip("VozFlow - Ctrl+Alt para dictar")
             self._status_action.setText("Listo para dictar")
 
