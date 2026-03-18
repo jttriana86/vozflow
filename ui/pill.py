@@ -2,14 +2,23 @@
 VozFlow - Indicador Visual (Pill)
 Ventana flotante que muestra el estado de grabación.
 """
+from pathlib import Path
+
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel
-from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, pyqtProperty
-from PyQt6.QtGui import QPainter, QColor, QBrush, QPen, QFont
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPainter, QColor, QBrush, QFont, QPixmap
 
 from config import (
     PILL_WIDTH, PILL_HEIGHT, PILL_OPACITY, PILL_CORNER_RADIUS,
     COLOR_IDLE, COLOR_RECORDING, COLOR_PROCESSING, COLOR_SUCCESS
 )
+
+# Ruta al logo
+ASSETS_DIR = Path(__file__).parent.parent / "assets"
+LOGO_PATH = ASSETS_DIR / "logo.png"
+
+# Tamaño ajustado para incluir logo
+PILL_WIDTH_WITH_LOGO = 150
 
 
 class PillWindow(QWidget):
@@ -26,6 +35,16 @@ class PillWindow(QWidget):
     def __init__(self):
         super().__init__()
 
+        # Cargar logo si existe
+        self._logo_pixmap = None
+        if LOGO_PATH.exists():
+            self._logo_pixmap = QPixmap(str(LOGO_PATH))
+            self._logo_pixmap = self._logo_pixmap.scaled(
+                28, 28,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation
+            )
+
         # Configurar ventana
         self.setWindowFlags(
             Qt.WindowType.FramelessWindowHint |
@@ -33,7 +52,10 @@ class PillWindow(QWidget):
             Qt.WindowType.Tool  # No aparece en taskbar
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setFixedSize(PILL_WIDTH, PILL_HEIGHT)
+
+        # Ajustar tamaño si hay logo
+        width = PILL_WIDTH_WITH_LOGO if self._logo_pixmap else PILL_WIDTH
+        self.setFixedSize(width, PILL_HEIGHT)
 
         # Estado
         self._state = "idle"
@@ -68,7 +90,7 @@ class PillWindow(QWidget):
         screen = QApplication.primaryScreen()
         if screen:
             geometry = screen.availableGeometry()
-            x = geometry.right() - PILL_WIDTH - 20
+            x = geometry.right() - self.width() - 20
             y = geometry.top() + 20
             self.move(x, y)
 
@@ -76,7 +98,7 @@ class PillWindow(QWidget):
         """Muestra estado de grabación."""
         self._state = "recording"
         self._current_color = QColor(COLOR_RECORDING)
-        self._label.setText("REC")
+        self._label.setText("  REC" if self._logo_pixmap else "REC")
         self._pulse_timer.start(50)
         self.show()
         self.update()
@@ -85,7 +107,7 @@ class PillWindow(QWidget):
         """Muestra estado de procesamiento."""
         self._state = "processing"
         self._current_color = QColor(COLOR_PROCESSING)
-        self._label.setText("...")
+        self._label.setText("  ..." if self._logo_pixmap else "...")
         self._pulse_timer.stop()
         self._pulse_opacity = 1.0
         self.update()
@@ -94,7 +116,7 @@ class PillWindow(QWidget):
         """Muestra éxito brevemente."""
         self._state = "success"
         self._current_color = QColor(COLOR_SUCCESS)
-        self._label.setText("OK")
+        self._label.setText("  OK" if self._logo_pixmap else "OK")
         self._pulse_timer.stop()
         self._pulse_opacity = 1.0
         self.update()
@@ -106,7 +128,8 @@ class PillWindow(QWidget):
         """Muestra error brevemente."""
         self._state = "error"
         self._current_color = QColor("#E53935")
-        self._label.setText(message[:8])  # Truncar
+        text = message[:8]  # Truncar
+        self._label.setText(f"  {text}" if self._logo_pixmap else text)
         self._pulse_timer.stop()
         self.update()
 
@@ -165,13 +188,20 @@ class PillWindow(QWidget):
             PILL_CORNER_RADIUS
         )
 
+        # Dibujar logo si existe
+        if self._logo_pixmap:
+            logo_x = 8
+            logo_y = (PILL_HEIGHT - self._logo_pixmap.height()) // 2
+            painter.drawPixmap(logo_x, logo_y, self._logo_pixmap)
+
         # Barra de nivel de audio (solo en recording)
         if self._state == "recording" and self._level > 0:
-            level_width = int((PILL_WIDTH - 20) * self._level)
+            bar_start = 45 if self._logo_pixmap else 10
+            bar_width = int((self.width() - bar_start - 10) * self._level)
             level_color = QColor(255, 255, 255, 80)
             painter.setBrush(QBrush(level_color))
             painter.drawRoundedRect(
-                10, PILL_HEIGHT - 8,
-                level_width, 4,
+                bar_start, PILL_HEIGHT - 8,
+                bar_width, 4,
                 2, 2
             )
