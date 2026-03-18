@@ -24,7 +24,7 @@ Doble clic en **`install.bat`** y listo.
 4. Pegala cuando VozFlow te la pida
 
 ### 4. Usar
-Doble clic en **VozFlow** en el escritorio (o ejecuta `vozflow.bat`)
+**Para iniciarlo, solo debes dar clic a `vozflow.bat`**. (También puedes usar el acceso directo en el escritorio si lo configuraste).
 
 ---
 

@@ -286,6 +286,13 @@ class SettingsDialog(QDialog):
         # Botones
         btn_layout = QHBoxLayout()
 
+        quit_btn = QPushButton("Cerrar VozFlow")
+        quit_btn.setStyleSheet("color: red;")
+        quit_btn.clicked.connect(self._quit_app)
+        btn_layout.addWidget(quit_btn)
+
+        btn_layout.addStretch()
+
         cancel_btn = QPushButton("Cancelar")
         cancel_btn.clicked.connect(self.reject)
         btn_layout.addWidget(cancel_btn)
@@ -296,6 +303,10 @@ class SettingsDialog(QDialog):
         btn_layout.addWidget(save_btn)
 
         layout.addLayout(btn_layout)
+
+    def _quit_app(self) -> None:
+        from PyQt6.QtWidgets import QApplication
+        QApplication.instance().quit()
 
     def _load_microphones(self) -> None:
         devices = AudioRecorder.list_devices()
