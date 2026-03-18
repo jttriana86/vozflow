@@ -56,10 +56,6 @@ class TrayIcon(QObject):
         hotkey_action.setEnabled(False)
         self._menu.addAction(hotkey_action)
 
-        doubletap_action = QAction("Ctrl x2: Modo manos libres")
-        doubletap_action.setEnabled(False)
-        self._menu.addAction(doubletap_action)
-
         self._menu.addSeparator()
 
         # Configuración
@@ -69,8 +65,8 @@ class TrayIcon(QObject):
 
         self._menu.addSeparator()
 
-        # Salir
-        quit_action = QAction("Salir")
+        # Salir - más visible
+        quit_action = QAction("❌ Cerrar VozFlow")
         quit_action.triggered.connect(self.quit_requested.emit)
         self._menu.addAction(quit_action)
 
