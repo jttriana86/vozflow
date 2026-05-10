@@ -24,7 +24,17 @@ Doble clic en **`install.bat`** y listo.
 4. Pegala cuando VozFlow te la pida
 
 ### 4. Usar
-**Para iniciarlo, solo debes dar clic a `vozflow.bat`**. (También puedes usar el acceso directo en el escritorio si lo configuraste).
+Tras correr `install.bat` tendrás VozFlow listo para abrir como cualquier app:
+- **Doble clic** en el acceso directo **VozFlow** del escritorio.
+- O presiona la tecla **Windows** y escribe `VozFlow` para lanzarlo desde el menú Inicio.
+- Clic derecho sobre cualquiera de los dos para **anclarlo a la barra de tareas**.
+
+Si moviste la carpeta del proyecto a otra ubicación, regenera los accesos directos con:
+```bash
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\create_shortcuts.ps1
+```
+
+(Como fallback siempre puedes ejecutar `vozflow.bat` directamente.)
 
 ---
 

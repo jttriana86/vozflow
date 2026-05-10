@@ -51,11 +51,14 @@ if %errorlevel% neq 0 (
 )
 echo       ✓ Dependencias instaladas
 
-:: Crear acceso directo
+:: Crear accesos directos (Escritorio + Menu Inicio)
 echo.
-echo [4/4] Creando acceso directo...
-call :CreateShortcut
-echo       ✓ Acceso directo creado en el escritorio
+echo [4/4] Creando accesos directos...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\create_shortcuts.ps1" -ProjectDir "%~dp0."
+if %errorlevel% neq 0 (
+    echo  ADVERTENCIA: No se pudieron crear los accesos directos.
+    echo  Puedes iniciar VozFlow ejecutando vozflow.bat
+)
 
 echo.
 echo  ╔═══════════════════════════════════════╗
@@ -64,24 +67,11 @@ echo  ╚═══════════════════════�
 echo.
 echo  Para iniciar VozFlow:
 echo    • Doble clic en "VozFlow" en el escritorio
+echo    • O busca "VozFlow" en el menu Inicio (tecla Windows)
 echo    • O ejecuta: vozflow.bat
 echo.
 echo  Necesitarás una API key de Groq (gratis):
 echo    https://console.groq.com/keys
 echo.
 pause
-exit /b 0
-
-:CreateShortcut
-:: Crear VBS para generar acceso directo
-echo Set oWS = WScript.CreateObject("WScript.Shell") > "%temp%\createshortcut.vbs"
-echo sLinkFile = oWS.SpecialFolders("Desktop") ^& "\VozFlow.lnk" >> "%temp%\createshortcut.vbs"
-echo Set oLink = oWS.CreateShortcut(sLinkFile) >> "%temp%\createshortcut.vbs"
-echo oLink.TargetPath = "%~dp0vozflow.bat" >> "%temp%\createshortcut.vbs"
-echo oLink.WorkingDirectory = "%~dp0" >> "%temp%\createshortcut.vbs"
-echo oLink.Description = "VozFlow - Speech to Text" >> "%temp%\createshortcut.vbs"
-echo oLink.IconLocation = "%SystemRoot%\System32\SpeechUX\sapi.cpl,0" >> "%temp%\createshortcut.vbs"
-echo oLink.Save >> "%temp%\createshortcut.vbs"
-cscript //nologo "%temp%\createshortcut.vbs"
-del "%temp%\createshortcut.vbs"
 exit /b 0
